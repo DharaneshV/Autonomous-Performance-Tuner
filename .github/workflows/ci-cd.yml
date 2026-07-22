@@ -54,6 +54,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Downcase REPO name
+        run: echo "REPO=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
+
       - name: Build and Push Docker Image (Immutable SHA + Latest Release Tag)
         uses: docker/build-push-action@v5
         with:
@@ -61,5 +64,5 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}/tuner:${{ github.sha }}
-            ghcr.io/${{ github.repository }}/tuner:latest
+            ghcr.io/${{ env.REPO }}/tuner:${{ github.sha }}
+            ghcr.io/${{ env.REPO }}/tuner:latest
