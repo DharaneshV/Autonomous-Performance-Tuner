@@ -20,16 +20,20 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.6'
 
       - name: Validate Code Format (Spotless)
-        run: ./gradlew spotlessCheck
+        run: gradle spotlessCheck
 
       - name: Build & Run ML Safety Validation Unit Tests
-        run: ./gradlew test
+        run: gradle test
 
       - name: Run Testcontainers Telemetry Integration Tests
-        run: ./gradlew :agent:testcontainersTest --info
+        run: gradle :agent:testcontainersTest --info
 
   docker-bake-and-publish:
     name: Package & Publish Container Image
