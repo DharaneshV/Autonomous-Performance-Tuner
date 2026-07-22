@@ -7,7 +7,7 @@ COPY agent /app/agent
 COPY ml-tuner /app/ml-tuner
 COPY target-app /app/target-app
 
-RUN ./gradlew :ml-tuner:installDist --no-daemon
+RUN gradle :ml-tuner:installDist --no-daemon
 
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
