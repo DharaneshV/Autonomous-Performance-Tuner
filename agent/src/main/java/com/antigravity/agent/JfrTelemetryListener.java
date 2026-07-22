@@ -30,8 +30,8 @@ public class JfrTelemetryListener implements AutoCloseable {
   }
 
   private void handleGcPauseEvent(RecordedEvent event) {
-    if (event.hasDuration("duration")) {
-      Duration duration = event.getDuration("duration");
+    Duration duration = event.getDuration();
+    if (duration != null) {
       recordGcEvent(duration.toMillis());
     }
   }
