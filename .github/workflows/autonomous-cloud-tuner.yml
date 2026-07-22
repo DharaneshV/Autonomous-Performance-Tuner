@@ -1,0 +1,46 @@
+name: Autonomous Daily Cloud Tuning Engine
+
+on:
+  schedule:
+    # 4 scheduled runs per day between 17:00 IST and 00:00 IST (11:30, 13:30, 15:30, 17:30 UTC)
+    - cron: '30 11 * * *'
+    - cron: '30 13 * * *'
+    - cron: '30 15 * * *'
+    - cron: '30 17 * * *'
+  workflow_dispatch: # Allows manual trigger anytime from GitHub Actions UI
+
+jobs:
+  autonomous-tune-and-commit:
+    name: Execute ML Optimization Engine & Cloud Commit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission for Gradle Wrapper
+        run: chmod +x gradlew
+
+      - name: Execute Pure Java ML Optimization Engine
+        run: ./gradlew :ml-tuner:run --no-daemon
+
+      - name: Commit and Push Autonomous Tuning Updates
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(auto-tune): autonomous JVM performance tuning update [GitHub Cloud Engine]"
+          commit_user_name: "Autonomous Performance Tuner Bot"
+          commit_user_email: "antigravity-bot@users.noreply.github.com"
+          commit_author: "Autonomous Performance Tuner Bot <antigravity-bot@users.noreply.github.com>"
+          file_pattern: "deployments/jvm-flags.env"
