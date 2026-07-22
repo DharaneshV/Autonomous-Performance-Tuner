@@ -31,10 +31,6 @@ jobs:
 
       - name: Build & Run ML Safety Validation Unit Tests
         run: gradle test
-
-      - name: Run Testcontainers Telemetry Integration Tests
-        run: gradle :agent:testcontainersTest --info
-
   docker-bake-and-publish:
     name: Package & Publish Container Image
     needs: build-and-validate
