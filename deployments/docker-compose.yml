@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  tuner-service:
+    image: ghcr.io/antigravity/autonomous-performance-tuner/tuner:latest
+    container_name: jvm-performance-tuner
+    restart: always
+    environment:
+      - JAVA_OPTS=-XX:+UseG1GC -XX:MaxGCPauseMillis=200
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower-auto-rollout
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 60 --cleanup --label-enable
