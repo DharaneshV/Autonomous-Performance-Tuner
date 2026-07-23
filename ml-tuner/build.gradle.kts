@@ -7,6 +7,10 @@ application {
     mainClass.set("com.antigravity.tuner.TunerApplication")
 }
 
+tasks.named<JavaExec>("run") {
+    workingDir = rootProject.projectDir
+}
+
 dependencies {
     // Apache Commons Math for Gaussian Process / Response Surface Optimization
     implementation("org.apache.commons:commons-math3:3.6.1")
