@@ -12,11 +12,14 @@ public class TunerApplication {
     System.out.println("==========================================================");
 
     try (JfrTelemetryListener listener = new JfrTelemetryListener()) {
-      // Simulate live JFR telemetry stream ingestion
-      listener.recordGcEvent(140);
-      listener.recordGcEvent(155);
-      listener.recordGcEvent(160);
-
+      // Simulate live JFR telemetry stream ingestion with natural variance
+      java.util.Random rand = new java.util.Random();
+      // Generate a realistic baseline pause between 130ms and 170ms
+      double basePause = 130.0 + (rand.nextDouble() * 40.0);
+      
+      listener.recordGcEvent((long) basePause);
+      listener.recordGcEvent((long) (basePause + rand.nextGaussian() * 10));
+      listener.recordGcEvent((long) (basePause - rand.nextGaussian() * 10));
       double avgPause = listener.getAverageGcPauseMs();
       System.out.printf(
           "📊 Live Telemetry Ingested: Avg GC Pause = %.2f ms (Events: %d)%n",
