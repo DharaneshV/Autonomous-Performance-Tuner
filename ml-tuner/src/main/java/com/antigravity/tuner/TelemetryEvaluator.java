@@ -248,7 +248,7 @@ public class TelemetryEvaluator {
             candidateMedian,
             candidateStdDev,
             improvementPercent,
-            rollbackFlags.replace("\"", "\\\""));
+            rollbackFlags.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", ""));
 
     Files.writeString(reportFile, jsonContent);
     return reportFile;
