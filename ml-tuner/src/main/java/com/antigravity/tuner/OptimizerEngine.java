@@ -50,8 +50,23 @@ public class OptimizerEngine {
             initialGuess);
 
     long recommendedPause = Math.round(result.getPoint()[0]);
-    int recommendedRegion = (int) Math.round(result.getPoint()[1]);
+    int rawRegion = (int) Math.round(result.getPoint()[1]);
+    int recommendedRegion = quantizeG1HeapRegionSize(rawRegion);
 
     return new JvmTuningRecommendation(recommendedPause, recommendedRegion);
+  }
+
+  public int quantizeG1HeapRegionSize(int rawSize) {
+    int[] validSizes = {1, 2, 4, 8, 16, 32};
+    int best = 1;
+    int minDiff = Integer.MAX_VALUE;
+    for (int size : validSizes) {
+      int diff = Math.abs(size - rawSize);
+      if (diff < minDiff) {
+        minDiff = diff;
+        best = size;
+      }
+    }
+    return best;
   }
 }

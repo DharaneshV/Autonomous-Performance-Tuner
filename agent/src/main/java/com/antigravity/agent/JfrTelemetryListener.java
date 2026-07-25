@@ -50,6 +50,17 @@ public class JfrTelemetryListener implements AutoCloseable {
     return gcEventCount.get();
   }
 
+  public long getTotalGcPauseMs() {
+    return gcPauseTotalMs.get();
+  }
+
+  public double getGcThroughputPercent(long executionDurationMs) {
+    if (executionDurationMs <= 0) return 100.0;
+    double pauseTime = (double) gcPauseTotalMs.get();
+    double throughput = ((executionDurationMs - pauseTime) / executionDurationMs) * 100.0;
+    return Math.max(0.0, Math.min(100.0, throughput));
+  }
+
   @Override
   public void close() {
     if (recordingStream != null) {

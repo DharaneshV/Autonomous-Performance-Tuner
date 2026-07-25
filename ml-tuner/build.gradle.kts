@@ -19,4 +19,6 @@ dependencies {
     
     // Dependent on agent module for JFR data models
     implementation(project(":agent"))
+    // Dependent on target-app module for benchmark workload execution
+    implementation(project(":target-app"))
 }

@@ -6,13 +6,24 @@ import java.nio.file.Path;
 
 /**
  * Automated PR Generator service that takes calculated optimal JVM tuning parameters, updates the
- * deployments configuration manifest, and prepares GitHub PR payloads for continuous delivery.
+ * deployments configuration manifest (only when measured and verified), and prepares GitHub PR
+ * payloads.
  */
 public class GithubPrService {
 
   public Path updateJvmFlagsConfig(
-      Path deploymentsDir, OptimizerEngine.JvmTuningRecommendation recommendation)
+      Path workspaceRootDir,
+      OptimizerEngine.JvmTuningRecommendation recommendation,
+      TelemetryEvaluator.EvaluationResult evalResult)
       throws IOException {
+
+    if (evalResult.status() != TelemetryEvaluator.TelemetryStatus.MEASURED_VERIFIED) {
+      System.out.println(
+          "⚠️ Telemetry report is SIMULATED_OR_UNVERIFIED. Refusing to write deployments/jvm-flags.env.");
+      return null;
+    }
+
+    Path deploymentsDir = workspaceRootDir.resolve("deployments");
     Files.createDirectories(deploymentsDir);
     Path flagsFile = deploymentsDir.resolve("jvm-flags.env");
 
@@ -27,23 +38,65 @@ public class GithubPrService {
   }
 
   public String generatePullRequestDescription(
-      OptimizerEngine.JvmTuningRecommendation rec, double baselineGcPauseMs) {
+      OptimizerEngine.JvmTuningRecommendation rec, TelemetryEvaluator.EvaluationResult evalResult) {
+
+    if (evalResult.status() != TelemetryEvaluator.TelemetryStatus.MEASURED_VERIFIED) {
+      return String.format(
+          """
+          ### 🤖 Autonomous Performance Tuner - Heartbeat Run Report
+
+          > [!WARNING]
+          > **SIMULATED - not measured**
+          > This tuning run was generated using simulated or unverified telemetry.
+          > No production JVM flags were updated in `deployments/jvm-flags.env`, and auto-merge is disabled.
+
+          #### Target Proposed Flags (Synthetic / Unverified)
+          - `-XX:MaxGCPauseMillis=%d`
+          - `-XX:G1HeapRegionSize=%dMB`
+
+          #### Reason
+          %s
+          """,
+          rec.maxGcPauseMillisMb(), rec.g1HeapRegionSizeMb(), evalResult.statusReason());
+    }
+
     return String.format(
         """
-                ### 🤖 Autonomous Performance Tuner - Automated JVM Tuning PR
+        ### 🤖 Autonomous Performance Tuner - Automated JVM Tuning PR
 
-                The Pure Java ML Optimization Engine has calculated improved JVM parameters based on live JFR telemetry:
+        The Pure Java ML Optimization Engine has calculated improved JVM parameters based on measured multi-sample telemetry:
 
-                | Parameter | Baseline Telemetry | Recommended Optimal Setting |
-                |---|---|---|
-                | **GC Pause Target** | %.2f ms | `-XX:MaxGCPauseMillis=%d` |
-                | **G1 Heap Region Size** | Default | `-XX:G1HeapRegionSize=%dMB` |
+        | Metric / Parameter | Baseline (Median ± StdDev) | Candidate (Median ± StdDev) | Recommended Setting |
+        |---|---|---|---|
+        | **GC Pause Duration** | %.2f ms (±%.2f) | %.2f ms (±%.2f) | `-XX:MaxGCPauseMillis=%d` |
+        | **G1 Heap Region Size** | Default | Default | `-XX:G1HeapRegionSize=%dMB` |
 
-                #### Safety & Verification Gating
-                - [x] Multivariate Response-Surface Optimization within bounds
-                - [x] ML Safety Validation Unit Tests passed
-                - [x] Testcontainers JFR Integration verified
-                """,
-        baselineGcPauseMs, rec.maxGcPauseMillisMb(), rec.g1HeapRegionSizeMb());
+        #### Performance Gain & Dual Statistical Clearance
+        - **Calculated Pause Improvement**: **%.2f%%**
+        - **Dual Statistical Gate**: **PASSED** (Exceeds 5%% threshold and sample variance margin)
+
+        #### Rollback Instructions
+        If performance regression is observed, revert this PR or restore previous configuration:
+        ```bash
+        %s
+        ```
+
+        #### Safety & Verification Gating
+        - [x] Multi-sample (3 baseline vs 3 candidate) benchmark passed
+        - [x] Dual Statistical Gate passed
+        - [x] Multivariate Response-Surface Optimization within bounds
+        - [x] ML Safety Validation Unit Tests passed
+
+        > [!NOTE]
+        > `target-app` serves as a workload **proxy**. Merged tuning recommendations should be treated as candidates for canary/staged rollout, not a final production decision.
+        """,
+        evalResult.baselineMedianMs(),
+        evalResult.baselineStdDev(),
+        evalResult.candidateMedianMs(),
+        evalResult.candidateStdDev(),
+        rec.maxGcPauseMillisMb(),
+        rec.g1HeapRegionSizeMb(),
+        evalResult.improvementPercent(),
+        evalResult.rollbackFlags());
   }
 }
