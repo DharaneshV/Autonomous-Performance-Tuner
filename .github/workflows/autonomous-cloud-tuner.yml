@@ -62,10 +62,12 @@ jobs:
             echo "⚠️ An open 'agent-run' PR already exists ($OPEN_PRS open). Skipping new PR creation."
           fi
 
-          FAILED_PRS=$(gh pr list --label "agent-run" --state closed --json number,mergedAt -q '[.[] | select(.mergedAt == null)] | length')
+          # Window the failed PR count to the last 7 days to avoid lifetime accumulation
+          SEVEN_DAYS_AGO=$(date -d '7 days ago' -I)
+          FAILED_PRS=$(gh pr list --search "label:agent-run is:pr is:closed is:unmerged created:>$SEVEN_DAYS_AGO" --json number -q 'length' || echo "0")
           echo "failed_prs_count=$FAILED_PRS" >> $GITHUB_OUTPUT
           if [ "$FAILED_PRS" -ge 3 ]; then
-            echo "🚨 Warning: $FAILED_PRS consecutive agent PRs failed or closed unmerged (Threshold N=3 reached)."
+            echo "🚨 Warning: $FAILED_PRS agent PRs failed or closed unmerged in the last 7 days (Threshold N=3 reached)."
             echo "human_review_required=true" >> $GITHUB_OUTPUT
           else
             echo "human_review_required=false" >> $GITHUB_OUTPUT
